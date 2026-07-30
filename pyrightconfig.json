@@ -3,6 +3,8 @@
   "venv": ".venv",
   "extraPaths": [
     "Machine-Learning/Supervised-Machine-Learning-Algorithms/Classification/src",
+    "Machine-Learning/Supervised-Machine-Learning-Algorithms/Ensemble-Methods/Bagging-And-Boosting/src",
+    "Machine-Learning/Unsupervied-Machine-Learning-Algorithms/Clustering/src",
     "Statictics-And-Probability/src"
   ],
   "reportMissingImports": "warning"
