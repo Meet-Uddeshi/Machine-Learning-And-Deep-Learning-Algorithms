@@ -2,7 +2,8 @@
   "venvPath": ".",
   "venv": ".venv",
   "extraPaths": [
-    "Machine-Learning/Supervised-Machine-Learning-Algorithms/Classification/src"
+    "Machine-Learning/Supervised-Machine-Learning-Algorithms/Classification/src",
+    "Statictics-And-Probability/src"
   ],
   "reportMissingImports": "warning"
 }
