@@ -1,25 +1,35 @@
-# Classification - Decision Tree
+# Supervised Machine Learning - Decision Tree Classifier
 
-> Supervised Machine Learning | Classification Algorithm
+> Supervised Machine Learning | Non-Parametric Hierarchical Tree-Based Classification
 
 ---
 
 ## Table of Contents
 
-1. [What is Classification?](#1-what-is-classification)
+1. [What is Decision Tree Classification?](#1-what-is-decision-tree-classification)
 2. [Theoretical Explanation](#2-theoretical-explanation)
 3. [Mathematical Operations](#3-mathematical-operations)
 4. [Real-World Example](#4-real-world-example)
-5. [Worked Decision Tree Sum (Step-by-Step)](#5-worked-decision-tree-sum-step-by-step)
+5. [Worked Decision Tree Calculation (Step-by-Step)](#5-worked-decision-tree-calculation-step-by-step)
 6. [Program Flowchart](#6-program-flowchart)
+7. [Module Responsibility Map](#7-module-responsibility-map)
+8. [Configuration](#8-configuration)
 
 ---
 
-## 1. What is Classification?
+## 1. What is Decision Tree Classification?
 
-Classification is a type of **supervised machine learning** where the goal is to predict a discrete categorical class label for an input data point based on learned features.
+Decision Tree Classification is a **non-parametric supervised learning algorithm** that recursively partitions feature space into hierarchical axis-aligned decision boundaries. The resulting structure resembles an inverted tree with internal decision nodes, branches representing feature thresholds, and leaf nodes representing final class labels.
 
-The algorithm builds a rule-based decision structure from a **labelled training dataset**, enabling it to classify new transactions as legitimate or fraudulent.
+### Key Characteristics
+
+| Property           | Description                                                          |
+|--------------------|----------------------------------------------------------------------|
+| Task type          | Supervised Learning (Classification & Regression)                    |
+| Splitting Criteria | Gini Impurity, Information Gain (Entropy), Log Loss                  |
+| Model Architecture | Hierarchical Binary or Multi-way Decision Tree                       |
+| Interpretability   | Extremely high (direct human-readable decision rules)                |
+| Key Hyperparameters| `max_depth`, `min_samples_split`, `min_samples_leaf`, `criterion`    |
 
 ---
 
@@ -27,95 +37,73 @@ The algorithm builds a rule-based decision structure from a **labelled training 
 
 ### How Decision Trees Work
 
-A Decision Tree splits data into subset branches based on feature values, forming an inverted tree hierarchy:
+Decision Trees operate via recursive binary splitting to maximize feature node purity.
 
-1. **Root Node**: The top node representing the entire dataset, split using the feature offering maximum information gain.
-2. **Internal Nodes**: Decision rules checking whether a feature value meets a threshold condition.
-3. **Leaf Nodes**: Terminal nodes outputting the final class prediction.
+```
+Full Training Set ---> Select Best Feature & Threshold ---> Split Node into Sub-nodes
+                                                                 |
+                                                                 v
+            Final Class Label Predictions <--- Check Stopping Criterion (Depth / Purity)
+```
 
-### Key Concepts
-
-- **Recursive Binary Splitting**: At each node, every feature and possible numerical threshold is tested to find the split minimizing child node impurity.
-- **Overfitting & Pruning**: Deep trees can memorize training noise. Parameters like `max_depth`, `min_samples_split`, and `min_samples_leaf` restrict growth and improve generalization.
+1. **Feature Evaluation**: For each feature, compute potential split thresholds.
+2. **Impurity Reduction**: Select the feature and threshold that yield the maximum reduction in impurity (Gini or Entropy).
+3. **Recursive Partitioning**: Divide child samples and repeat the process on sub-nodes.
+4. **Pruning & Termination**: Stop when reaching max depth, minimum node samples, or pure leaves to prevent overfitting.
 
 ---
 
 ## 3. Mathematical Operations
 
-### Gini Impurity
+### 1. Gini Impurity
 
-Gini Impurity measures the probability of incorrectly classifying a randomly chosen element if it were randomly labeled according to the distribution of labels in the subset.
+For a dataset node $D$ containing $C$ classes where $p_i$ is the probability of class $i$:
 
-For a dataset node with `K` classes and class probabilities `p_i`:
+$$\text{Gini}(D) = 1 - \sum_{i=1}^{C} p_i^2$$
 
-```
-Gini(Node) = 1 - sum(p_i ^ 2) for i = 1 to K
-```
+### 2. Entropy & Information Gain
 
-- `Gini = 0`: Pure node (all samples belong to one class).
-- `Gini = 0.5`: Equal binary distribution (maximum uncertainty).
+$$\text{Entropy}(D) = -\sum_{i=1}^{C} p_i \log_2(p_i)$$
 
-### Information Gain
+Information Gain for a split on feature $A$ dividing $D$ into subsets $D_1$ and $D_2$:
 
-Information Gain measures the reduction in impurity after splitting a parent node `P` into left (`L`) and right (`R`) children:
-
-```
-Information Gain = Gini(P) - [ (N_L / N_P) * Gini(L) + (N_R / N_P) * Gini(R) ]
-```
+$$\text{GAIN}(D, A) = \text{Entropy}(D) - \sum_{k=1}^{2} \frac{|D_k|}{|D|} \text{Entropy}(D_k)$$
 
 ---
 
 ## 4. Real-World Example
 
-### Financial Fraud Detection
+### Medical Diagnosis Prediction (`heart.csv`)
 
-This project predicts whether an online financial transaction is **Fraudulent (`isFraud = 1`)** or **Legitimate (`isFraud = 0`)**.
-
-**Dataset:** `onlinefraud.csv`  
-**Target Variable:** `isFraud`  
-**Features Used:** `step`, `type` (PAYMENT, TRANSFER, CASH_OUT, DEBIT, CASH_IN), `amount`, `oldbalanceOrg`, `newbalanceOrig`, `oldbalanceDest`, `newbalanceDest`.
-
-**Excluded Columns:** `nameOrig`, `nameDest`, `isFlaggedFraud`.
+- **Dataset**: `heart.csv` (Heart Disease Dataset)
+- **Target Variable**: `target` (`0` = Healthy, `1` = Heart Disease)
+- **Features Used**: `age`, `sex`, `cp`, `trestbps`, `chol`, `fbs`, `restecg`, `thalach`, `exang`, `oldpeak`, `slope`, `ca`, `thal`.
 
 ---
 
-## 5. Worked Decision Tree Sum (Step-by-Step)
+## 5. Worked Decision Tree Calculation (Step-by-Step)
 
-Consider a dataset of 10 financial transactions (6 Legitimate, 4 Fraudulent).
+Consider a toy dataset of $N=4$ patients evaluated on Blood Pressure ($X$) for Heart Disease ($Y$):
+- $P_1: X = 110 \implies Y = 0$
+- $P_2: X = 120 \implies Y = 0$
+- $P_3: X = 140 \implies Y = 1$
+- $P_4: X = 150 \implies Y = 1$
 
-### Initial Parent Node (P)
+### Step 1: Compute Root Node Gini Impurity
+Class probabilities: $p_0 = 2/4 = 0.5$, $p_1 = 2/4 = 0.5$.
 
-```
-N = 10 (Legitimate = 6, Fraudulent = 4)
-p_Legit = 6/10 = 0.6
-p_Fraud = 4/10 = 0.4
+$$\text{Gini}(D_{\text{root}}) = 1 - (0.5^2 + 0.5^2) = 1 - (0.25 + 0.25) = 0.50$$
 
-Gini(Parent) = 1 - (0.6^2 + 0.4^2) = 1 - (0.36 + 0.16) = 0.48
-```
+### Step 2: Evaluate Split Threshold at $X \le 130$
+- **Left Node ($D_L$)**: $P_1, P_2 \implies (2 \text{ Class } 0, 0 \text{ Class } 1)$
+  $$\text{Gini}(D_L) = 1 - (1.0^2 + 0.0^2) = 0.0$$
+- **Right Node ($D_R$)**: $P_3, P_4 \implies (0 \text{ Class } 0, 2 \text{ Class } 1)$
+  $$\text{Gini}(D_R) = 1 - (0.0^2 + 1.0^2) = 0.0$$
 
-### Test Split on Feature: `Amount > 200,000`
+### Step 3: Weighted Impurity of Split
+$$\text{Gini}_{\text{split}} = \frac{2}{4}(0.0) + \frac{2}{4}(0.0) = 0.0$$
 
-- **Left Child (L): `Amount <= 200,000`** (N_L = 7, 6 Legit, 1 Fraud)
-  ```
-  p_Legit = 6/7,  p_Fraud = 1/7
-  Gini(L) = 1 - [ (6/7)^2 + (1/7)^2 ] = 1 - [ 36/49 + 1/49 ] = 1 - (37/49) = 0.2449
-  ```
-
-- **Right Child (R): `Amount > 200,000`** (N_R = 3, 0 Legit, 3 Fraud)
-  ```
-  p_Legit = 0/3 = 0,  p_Fraud = 3/3 = 1
-  Gini(R) = 1 - (0^2 + 1^2) = 0.0000  (Pure Node!)
-  ```
-
-### Compute Information Gain
-
-```
-Weighted Child Gini = (7/10) * 0.2449 + (3/10) * 0.0000 = 0.1714
-Information Gain    = Gini(Parent) - Weighted Child Gini
-                     = 0.4800 - 0.1714 = 0.3086
-```
-
-Because Information Gain > 0, the decision tree selects `Amount > 200,000` as an optimal split point.
+Gini Reduction = $0.50 - 0.0 = 0.50$ (Perfect separation achieved in one split!).
 
 ---
 
@@ -125,56 +113,65 @@ Because Information Gain > 0, the decision tree selects `Amount > 200,000` as an
 +-----------------------------------------------------+
 |               START: main.py runs                   |
 +-----------------------------------------------------+
-                         |
-                         v
+                           |
+                           v
 +-----------------------------------------------------+
 |  Step 1: Load PipelineConfig                        |
-|  - PathConfig (dataset path, output path)           |
-|  - DataConfig (target='isFraud', max_samples=50000) |
-|  - ModelConfig (criterion='gini', max_depth=10)     |
-|  - LoggingConfig (level=DEBUG, log to file=True)    |
+|  - PathConfig   (dataset and output paths)          |
+|  - DataConfig   (target_column='target', test_size) |
+|  - ModelConfig  (criterion='gini', max_depth=5)     |
+|  - LoggingConfig (console-only logs)                |
 +-----------------------------------------------------+
-                         |
-                         v
+                           |
+                           v
 +-----------------------------------------------------+
-|  Step 2: Initialize Logger (LoggerFactory)          |
+|  Step 2: Initialize Console Logger                  |
 +-----------------------------------------------------+
-                         |
-                         v
+                           |
+                           v
 +-----------------------------------------------------+
 |  Step 3: DataLoaderService.load_and_prepare()       |
-|  - Ingest CSV -> Validate schema -> Downsample      |
-|  - Impute nulls & encode categorical variables      |
-|  - Standardize features & perform Stratified Split  |
+|  - Load heart.csv, drop duplicates, split train/test|
 +-----------------------------------------------------+
-                         |
-                         v
+                           |
+                           v
 +-----------------------------------------------------+
-|  Step 4: DecisionTreeClassifierService.train()      |
-|  - Fit decision tree estimator on training set      |
+|  Step 4: DecisionTreeClassifierService              |
+|  - Fit DecisionTreeClassifier                       |
+|  - Evaluate Accuracy, Precision, Recall, F1, ROC-AUC|
+|  - Generate confusion_matrix.png & feature_imp.png  |
+|  - Export decision_tree_analysis.md report          |
 +-----------------------------------------------------+
-                         |
-                         v
-+-----------------------------------------------------+
-|  Step 5: DecisionTreeClassifierService.evaluate()   |
-|  - Evaluate metrics (Accuracy, Precision, Recall)   |
-|  - Plot Confusion Matrix & Feature Importances      |
-|  - Write results text file & markdown analysis      |
-+-----------------------------------------------------+
-                         |
-                         v
+                           |
+                           v
 +-----------------------------------------------------+
 |               END: Pipeline Complete               |
 +-----------------------------------------------------+
 ```
 
-### Module Responsibility Map
+---
+
+## 7. Module Responsibility Map
 
 ```
 main.py
   |
-  +-- config.py                   (PipelineConfig, PathConfig, DataConfig, ModelConfig, LoggingConfig)
-  +-- logger.py                   (LoggerFactory)
-  +-- data_loader.py              (DataLoaderService)
-  +-- decision_tree_classifier.py (DecisionTreeClassifierService)
+  +-- config.py                   (PipelineConfig, PathConfig, DataConfig, ModelConfig)
+  +-- logger.py                   (LoggerFactory - stdout stream logging)
+  +-- data_loader.py              (DataLoaderService - loading, scaling, splitting)
+  +-- decision_tree_classifier.py (DecisionTreeClassifierService - training, tree plot, metrics)
 ```
+
+---
+
+## 8. Configuration
+
+All parameters are configured in `src/config.py`.
+
+| Parameter            | Location      | Default   | Description                                      |
+|----------------------|---------------|-----------|--------------------------------------------------|
+| `criterion`          | `ModelConfig` | `'gini'`  | Splitting function (`'gini'` or `'entropy'`)     |
+| `max_depth`          | `ModelConfig` | `5`       | Maximum tree depth constraint                    |
+| `min_samples_split`  | `ModelConfig` | `2`       | Minimum samples required to split a node         |
+| `test_size`          | `DataConfig`  | `0.20`    | Partition percentage reserved for test set       |
+| `target_column`      | `DataConfig`  | `'target'`| Target classification outcome variable           |

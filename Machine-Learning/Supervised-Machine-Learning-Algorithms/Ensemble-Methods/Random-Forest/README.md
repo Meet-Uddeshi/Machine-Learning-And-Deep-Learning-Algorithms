@@ -1,25 +1,35 @@
-# Classification - Random Forest
+# Supervised Machine Learning - Random Forest Classifier
 
-> Supervised Machine Learning | Ensemble Learning Algorithm
+> Supervised Machine Learning | Ensemble Bagging & Subspace Randomization Algorithm
 
 ---
 
 ## Table of Contents
 
-1. [What is Classification?](#1-what-is-classification)
+1. [What is Random Forest?](#1-what-is-random-forest)
 2. [Theoretical Explanation](#2-theoretical-explanation)
 3. [Mathematical Operations](#3-mathematical-operations)
 4. [Real-World Example](#4-real-world-example)
-5. [Worked Random Forest Sum (Step-by-Step)](#5-worked-random-forest-sum-step-by-step)
+5. [Worked Random Forest Calculation (Step-by-Step)](#5-worked-random-forest-calculation-step-by-step)
 6. [Program Flowchart](#6-program-flowchart)
+7. [Module Responsibility Map](#7-module-responsibility-map)
+8. [Configuration](#8-configuration)
 
 ---
 
-## 1. What is Classification?
+## 1. What is Random Forest?
 
-Classification is a type of **supervised machine learning** where an algorithm learns to assign input feature vectors to discrete target classes based on patterns in a labelled training set.
+Random Forest is a highly effective **ensemble learning algorithm** that combines Bagging (Bootstrap Aggregating) with Random Subspace Selection to train a large collection of de-correlated decision trees. By averaging predictions across hundreds of individual decision trees, Random Forest significantly reduces model variance without increasing bias.
 
-Random Forest extends single decision tree classification by constructing an ensemble of decorrelated decision trees, aggregating their votes to produce robust and highly accurate predictions.
+### Key Characteristics
+
+| Property           | Description                                                          |
+|--------------------|----------------------------------------------------------------------|
+| Task type          | Supervised Learning (Classification & Regression)                    |
+| Ensemble Technique | Bagging + Feature Subspace Sampling ($m = \sqrt{D}$)                 |
+| Base Estimators    | Fully grown unpruned decision trees                                  |
+| Out-Of-Bag (OOB)   | Inherent internal cross-validation error estimation                 |
+| Key Hyperparameters| `n_estimators`, `max_features`, `max_depth`, `bootstrap`             |
 
 ---
 
@@ -27,92 +37,61 @@ Random Forest extends single decision tree classification by constructing an ens
 
 ### How Random Forest Works
 
-Random Forest is a **bagging (bootstrap aggregating)** ensemble method that builds `N` decision trees in parallel.
+Random Forest decorrelates decision trees by injecting randomness during both data sampling and feature node selection.
 
-1. **Bootstrap Sampling**: Each tree is trained on a random sample of rows drawn with replacement from the original dataset.
-2. **Random Feature Selection**: At each node split, only a random subset `m = sqrt(M)` of total `M` features is considered. This decorrelates individual trees.
-3. **Majority Voting**: For a new test sample, each tree casts a vote, and the class receiving the majority vote becomes the final prediction.
+```
+Training Dataset ---> Generate M Bootstrap Samples ---> Train M Decision Trees (Random Feature Subspaces)
+                                                                                  |
+                                                                                  v
+                Final Class Prediction <--- Majority Vote / Probability Average <--- Aggregate Tree Outputs
+```
 
-### Out-of-Bag (OOB) Score
-
-Because bootstrap sampling draws samples with replacement, approximately 36.8% of training data is left out of any individual tree's training set. These "Out-of-Bag" (OOB) samples act as an internal validation set, allowing OOB generalization error estimation without a separate validation split.
+1. **Bootstrap Sampling**: Draw $M$ independent bootstrap samples with replacement from training dataset $D$.
+2. **Random Subspace Selection**: At each node split, consider only a random subset $m = \sqrt{D}$ features instead of all $D$ features.
+3. **Aggregated Voting**: Combine predictions across all trees via majority voting.
 
 ---
 
 ## 3. Mathematical Operations
 
-### Bootstrap Sample Inclusion Probability
+### 1. Ensemble Prediction Aggregation
 
-The probability that a specific observation is **NOT** selected in a bootstrap sample of size `N` is:
+For classification with $M$ decision trees $h_m(x)$:
 
-```
-P(Not Selected) = (1 - 1/N)^N
-```
+$$\hat{y} = \arg\max_{c} \frac{1}{M} \sum_{m=1}^{M} I(h_m(x) = c)$$
 
-As `N -> infinity`, this probability approaches:
+### 2. Feature Importance (Mean Decrease Gini)
 
-```
-lim_{N -> inf} (1 - 1/N)^N = 1 / e approx 0.368 (36.8%)
-```
+Total decrease in Gini impurity brought by feature $X_j$ averaged across all trees:
 
-Thus, ~63.2% of distinct samples are included in each tree, while ~36.8% form the OOB evaluation set.
-
-### Ensemble Prediction Formula
-
-For a classification task with `B` trees where tree `b` outputs predicted class `C_b(x)`:
-
-```
-Final Prediction(x) = argmax_k [ sum_{b=1}^{B} I(C_b(x) == k) ]
-```
-
-Where `I(...)` is the indicator function returning 1 if true and 0 otherwise.
+$$\text{Importance}(X_j) = \frac{1}{M} \sum_{m=1}^{M} \sum_{t \in T_m: v(t)=j} \Delta \text{Gini}(t)$$
 
 ---
 
 ## 4. Real-World Example
 
-### Indian Railway Maintenance Detection
+### Heart Disease Medical Classification (`heart.csv`)
 
-This project predicts whether a train locomotive requires immediate **Maintenance (`maintenance_required = 1`)** or is **Operational (`maintenance_required = 0`)** based on sensor readings and operational conditions.
-
-**Dataset:** `indian_railway_failure_detection_maintenance_v2.csv`  
-**Target Variable:** `maintenance_required`  
-**Features Used:** `region`, `season`, `train_type`, `train_age_years`, `average_speed_kmph`, `distance_travelled_km`, `ambient_temperature_c`, `humidity_percent`, `rainfall_mm`, `wheel_wear_percent`, `track_vibration_level`, `rail_wear_mm`, `bearing_temperature_c`, `axle_temperature_c`, `brake_pad_wear_percent`, `brake_pressure_psi`, `battery_voltage`, `last_maintenance_days`, `sensor_health_index`, `inspection_score`, `delay_minutes`.
-
-**Excluded Columns:** `train_id`, `failure_type`, `failure_severity`, `risk_score`.
+- **Dataset**: `heart.csv` (Heart Disease Dataset)
+- **Target Variable**: `target` (`0` = Healthy, `1` = Heart Disease)
+- **Features Used**: `age`, `cp`, `trestbps`, `chol`, `thalach`, `oldpeak`, `slope`, `ca`, `thal`.
 
 ---
 
-## 5. Worked Random Forest Sum (Step-by-Step)
+## 5. Worked Random Forest Calculation (Step-by-Step)
 
-Consider an ensemble of **B = 3 Trees** predicting whether maintenance is required for a locomotive.
+Consider an ensemble of $M=3$ decision trees evaluating a test instance $x$:
 
-### Individual Tree Predictions for Query Sample X
+### Step 1: Obtain Individual Tree Predictions
+- Tree 1 Output: $h_1(x) = 1$ (Confidence: 0.85)
+- Tree 2 Output: $h_2(x) = 1$ (Confidence: 0.90)
+- Tree 3 Output: $h_3(x) = 0$ (Confidence: 0.60)
 
-- **Tree 1**: Evaluates `bearing_temperature_c > 90.0` and `track_vibration_level > 5.0`  
-  `Prediction_1 = 1 (Maintenance Required)`
-- **Tree 2**: Evaluates `wheel_wear_percent > 60.0` and `brake_pressure_psi < 80.0`  
-  `Prediction_2 = 1 (Maintenance Required)`
-- **Tree 3**: Evaluates `battery_voltage < 22.0`  
-  `Prediction_3 = 0 (No Maintenance Required)`
+### Step 2: Majority Vote Aggregation
+- Class 1 Votes: 2 ($h_1, h_2$)
+- Class 0 Votes: 1 ($h_3$)
 
-### Step 1: Vote Aggregation
-
-| Class Label | Tree 1 | Tree 2 | Tree 3 | Total Votes |
-|-------------|--------|--------|--------|-------------|
-| Class 0     | 0      | 0      | 1      | 1           |
-| Class 1     | 1      | 1      | 0      | 2           |
-
-### Step 2: Majority Decision
-
-```
-Class 1 (Maintenance Required) = 2 votes
-Class 0 (No Maintenance)        = 1 vote
-
-Ensemble Output = Class 1 (Maintenance Required)
-```
-
-The ensemble correctly overrides the single noisy vote of Tree 3, demonstrating variance reduction through bagging.
+$$\hat{y}_{\text{ensemble}} = \text{Class 1} \quad (2 / 3 = 66.7\% \text{ Vote Share})$$
 
 ---
 
@@ -122,60 +101,65 @@ The ensemble correctly overrides the single noisy vote of Tree 3, demonstrating 
 +-----------------------------------------------------+
 |               START: main.py runs                   |
 +-----------------------------------------------------+
-                         |
-                         v
+                           |
+                           v
 +-----------------------------------------------------+
 |  Step 1: Load PipelineConfig                        |
-|  - PathConfig (dataset path, output path)           |
-|  - DataConfig (target='maintenance_required',       |
-|                max_samples=50000)                   |
-|  - ModelConfig (n_estimators=100, max_depth=15,    |
-|                oob_score=True)                      |
-|  - LoggingConfig (level=DEBUG, log to file=True)    |
+|  - PathConfig   (dataset and output paths)          |
+|  - DataConfig   (target_column='target', test_size) |
+|  - ModelConfig  (n_estimators=100, max_features='sqrt')|
+|  - LoggingConfig (console-only logs)                |
 +-----------------------------------------------------+
-                         |
-                         v
+                           |
+                           v
 +-----------------------------------------------------+
-|  Step 2: Initialize Logger (LoggerFactory)          |
+|  Step 2: Initialize Console Logger                  |
 +-----------------------------------------------------+
-                         |
-                         v
+                           |
+                           v
 +-----------------------------------------------------+
 |  Step 3: DataLoaderService.load_and_prepare()       |
-|  - Ingest CSV -> Validate schema -> Downsample      |
-|  - Impute nulls & encode categorical variables      |
-|  - Standardize features & perform Stratified Split  |
+|  - Load heart.csv, scale with StandardScaler        |
 +-----------------------------------------------------+
-                         |
-                         v
+                           |
+                           v
 +-----------------------------------------------------+
-|  Step 4: RandomForestClassifierService.train()      |
-|  - Fit 100 decision trees via bagging & random      |
-|    feature sampling                                 |
-|  - Extract OOB generalization score                 |
+|  Step 4: RandomForestClassifierService              |
+|  - Fit RandomForestClassifier                       |
+|  - Evaluate Accuracy, Precision, Recall, F1, ROC-AUC|
+|  - Plot confusion_matrix.png & feature_importance.png|
+|  - Export random_forest_analysis.md report          |
 +-----------------------------------------------------+
-                         |
-                         v
-+-----------------------------------------------------+
-|  Step 5: RandomForestClassifierService.evaluate()  |
-|  - Compute test accuracy, precision, recall, F1     |
-|  - Plot Confusion Matrix & Feature Importances      |
-|  - Save classification_results.txt & analysis.md    |
-+-----------------------------------------------------+
-                         |
-                         v
+                           |
+                           v
 +-----------------------------------------------------+
 |               END: Pipeline Complete               |
 +-----------------------------------------------------+
 ```
 
-### Module Responsibility Map
+---
+
+## 7. Module Responsibility Map
 
 ```
 main.py
   |
-  +-- config.py                    (PipelineConfig, PathConfig, DataConfig, ModelConfig, LoggingConfig)
-  +-- logger.py                    (LoggerFactory)
-  +-- data_loader.py               (DataLoaderService)
-  +-- random_forest_classifier.py  (RandomForestClassifierService)
+  +-- config.py                   (PipelineConfig, PathConfig, DataConfig, ModelConfig)
+  +-- logger.py                   (LoggerFactory - stdout stream logging)
+  +-- data_loader.py              (DataLoaderService - loading, scaling, splitting)
+  +-- random_forest_classifier.py (RandomForestClassifierService - fit, feature importance, metrics)
 ```
+
+---
+
+## 8. Configuration
+
+All parameters are configured in `src/config.py`.
+
+| Parameter      | Location      | Default  | Description                                      |
+|----------------|---------------|----------|--------------------------------------------------|
+| `n_estimators` | `ModelConfig` | `100`    | Total number of decision trees in ensemble       |
+| `max_features` | `ModelConfig` | `'sqrt'` | Number of features to consider per split         |
+| `max_depth`    | `ModelConfig` | `None`   | Maximum depth per tree (None grows until pure)   |
+| `test_size`    | `DataConfig`  | `0.20`   | Partition percentage reserved for test set       |
+| `target_column`| `DataConfig`  | `'target'`| Target classification outcome variable          |

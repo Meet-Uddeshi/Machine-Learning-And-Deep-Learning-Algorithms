@@ -1,154 +1,116 @@
-# Classification - Support Vector Machine (SVM)
+# Supervised Machine Learning - Support Vector Machine (SVM) Classifier
 
-> Supervised Machine Learning | Classification Algorithm
+> Supervised Machine Learning | Maximum Margin Separating Hyperplane & Kernel Classification Algorithm
 
 ---
 
 ## Table of Contents
 
-1. [What is Classification?](#1-what-is-classification)
+1. [What is Support Vector Machine?](#1-what-is-support-vector-machine)
 2. [Theoretical Explanation](#2-theoretical-explanation)
 3. [Mathematical Operations](#3-mathematical-operations)
 4. [Real-World Example](#4-real-world-example)
-5. [Worked SVM Sum (Step-by-Step)](#5-worked-svm-sum-step-by-step)
+5. [Worked SVM Calculation (Step-by-Step)](#5-worked-svm-calculation-step-by-step)
 6. [Program Flowchart](#6-program-flowchart)
+7. [Module Responsibility Map](#7-module-responsibility-map)
+8. [Configuration](#8-configuration)
 
 ---
 
-## 1. What is Classification?
+## 1. What is Support Vector Machine?
 
-Classification is a type of **supervised machine learning** where the goal is to assign an input data point to one of a fixed set of **discrete categories (classes)**.
-
-The algorithm learns from a **labelled training dataset** where the ground-truth class is known. After training, it applies the learned decision boundary to predict class labels for new, unseen data points.
+Support Vector Machine (SVM) is a robust **supervised learning algorithm** used for linear and non-linear classification and regression. SVM constructs an optimal high-dimensional separating hyperplane that maximizes the margin (distance) between the decision boundary and the closest training points of any class, known as **support vectors**.
 
 ### Key Characteristics
 
 | Property           | Description                                                          |
 |--------------------|----------------------------------------------------------------------|
-| Task type          | Supervised Learning                                                  |
-| Output type        | Discrete class label (e.g., "Malignant", "Benign")                   |
-| Training data      | Labelled (input features + ground-truth class)                       |
-| Prediction         | Assigns class label based on maximum margin separation               |
-| Evaluation metrics | Accuracy, Precision, Recall, F1-Score, Confusion Matrix              |
+| Task type          | Supervised Learning (Classification & Regression)                    |
+| Decision Boundary  | Optimal Maximum-Margin Hyperplane                                    |
+| Support Vectors    | Critical data points defining the boundary margins                   |
+| Kernel Trick       | Linear, Polynomial, RBF (Radial Basis Function), Sigmoid kernels     |
+| Key Hyperparameters| `C` (Regularization), `kernel`, `gamma`, `degree`                    |
 
 ---
 
 ## 2. Theoretical Explanation
 
-### How Support Vector Machines (SVM) Work
+### How SVM Works
 
-Support Vector Machine (SVM) is a powerful supervised algorithm used for classification and regression. The fundamental principle of SVM is:
+SVM seeks the optimal linear hyperplane $w^T x + b = 0$ that maximizes geometric margin $\frac{2}{\|w\|}$.
 
-> "Find the optimal decision boundary (hyperplane) that maximizes the margin between different classes in the feature space."
+```
+Standardized Features ---> Compute Kernel Matrix K(x, y) ---> Solve Convex Optimization (Quadratic Programming)
+                                                                                  |
+                                                                                  v
+                 Class Prediction <--- Sum Support Vector Coefficients <--- Extract Support Vectors & Weights
+```
 
-### Key Concepts
-
-1. **Hyperplane**: The decision boundary that separates classes. In an N-dimensional space, a hyperplane is an (N-1)-dimensional subspace.
-2. **Support Vectors**: The training data points closest to the hyperplane. These points dictate the orientation and position of the hyperplane.
-3. **Margin**: The distance between the hyperplane and the nearest data point of any class. SVM maximizes this margin.
-4. **Soft Margin & C Parameter**: Real-world data is rarely linearly separable. The hyperparameter C controls the trade-off between maximizing the margin and minimizing classification errors.
-5. **Kernel Trick**: Transforms low-dimensional non-linearly separable input data into a higher-dimensional space where a linear hyperplane can separate the classes.
+1. **Margin Maximization**: Compute optimal weight vector $w$ and bias $b$ to maximize margin distance.
+2. **Soft Margin Penalty ($C$)**: Balance margin maximization against misclassification errors via slack variables $\xi_i$.
+3. **Kernel Trick**: Map non-linearly separable inputs into higher-dimensional feature space $\Phi(x)$ where linear separation is possible using kernel functions $K(x, y) = \langle \Phi(x), \Phi(y) \rangle$.
 
 ---
 
 ## 3. Mathematical Operations
 
-### Hyperplane Equation
+### 1. Primal Optimization Problem (Soft-Margin SVM)
 
-A decision boundary in N-dimensional space is defined as:
+$$\min_{w, b, \xi} \frac{1}{2} \|w\|^2 + C \sum_{i=1}^{N} \xi_i$$
 
-```
-w^T * x + b = 0
-```
+subject to constraints:
+$$y_i (w^T x_i + b) \ge 1 - \xi_i, \quad \xi_i \ge 0, \quad \forall i$$
 
-Where:
-- `w` is the weight vector perpendicular to the hyperplane.
-- `x` is the feature vector.
-- `b` is the bias scalar offset.
+### 2. Dual Formulation with Kernel Trick
 
-### Functional & Geometric Margin
+$$\max_{\alpha} \sum_{i=1}^{N} \alpha_i - \frac{1}{2} \sum_{i=1}^{N} \sum_{j=1}^{N} \alpha_i \alpha_j y_i y_j K(x_i, x_j)$$
 
-For a training sample `(x_i, y_i)` where `y_i in {-1, +1}`:
+subject to $\sum_{i=1}^{N} \alpha_i y_i = 0$ and $0 \le \alpha_i \le C$.
 
-```
-Functional Margin  = y_i * (w^T * x_i + b)
-Geometric Margin   = y_i * (w^T * x_i + b) / ||w||
-```
+### 3. Common Kernel Functions
 
-### Optimization Objective (Soft Margin SVM)
-
-```
-minimize:  (1/2) * ||w||^2 + C * sum(xi_i)
-subject to: y_i * (w^T * x_i + b) >= 1 - xi_i,  xi_i >= 0
-```
-
-Where `xi_i` are slack variables accounting for misclassified points or points inside the margin.
-
-### Common Kernel Functions
-
-1. **Linear**: `K(x, z) = x^T * z`
-2. **Polynomial**: `K(x, z) = (gamma * x^T * z + coef0)^degree`
-3. **Radial Basis Function (RBF)**: `K(x, z) = exp(-gamma * ||x - z||^2)`
-4. **Sigmoid**: `K(x, z) = tanh(gamma * x^T * z + coef0)`
+- **Linear Kernel**: $K(x, y) = x^T y$
+- **Polynomial Kernel**: $K(x, y) = (x^T y + c)^d$
+- **Radial Basis Function (RBF) Kernel**:
+  $$K(x, y) = \exp\left( -\gamma \|x - y\|^2 \right)$$
 
 ---
 
 ## 4. Real-World Example
 
-### Breast Cancer Wisconsin Diagnosis
+### Heart Disease Medical Classification (`heart.csv`)
 
-This project predicts whether a breast mass tumor sample is **Malignant (M)** or **Benign (B)** based on cell nucleus characteristics.
-
-**Dataset:** `breast_cancer_wisconsin.csv`  
-**Target Variable:** `diagnosis` (`M` = Malignant, `B` = Benign)  
-**Features Used:** Nucleus radius, texture, perimeter, area, smoothness, compactness, concavity, concave points, symmetry, and fractal dimension.
-
-**Excluded Column:** `id` (non-predictive identifier).
+- **Dataset**: `heart.csv` (Heart Disease Dataset)
+- **Target Variable**: `target` (`0` = Healthy, `1` = Heart Disease)
+- **Features Used**: Standardized clinical metrics (`age`, `chol`, `thalach`, `oldpeak`, etc.).
 
 ---
 
-## 5. Worked SVM Sum (Step-by-Step)
+## 5. Worked SVM Calculation (Step-by-Step)
 
-Consider a 2D dataset with two classes (`y = +1` and `y = -1`).
+Consider a toy 1D dataset with $N=3$ samples and binary target $y \in \{-1, +1\}$:
+- $x_1 = 1 \implies y_1 = -1$
+- $x_2 = 2 \implies y_2 = -1$
+- $x_3 = 4 \implies y_3 = +1$
 
-### Training Points
+Find linear decision boundary $w \cdot x + b = 0$.
 
-- `P1 (2, 2)` with label `y_1 = +1`
-- `P2 (4, 4)` with label `y_2 = +1`
-- `P3 (1, 3)` with label `y_3 = -1`
-- `P4 (3, 5)` with label `y_4 = -1`
+### Step 1: Identify Support Vectors
+Support vectors are the boundary points closest to the split: $x_2 = 2$ ($y_2 = -1$) and $x_3 = 4$ ($y_3 = +1$).
 
-Assume the maximum margin line equation is `w1*x1 + w2*x2 + b = 0` with `w = [-1, 1]` and `b = -1`.
+### Step 2: Set Boundary Equations
+- For $x_3 = 4$: $w(4) + b = +1$
+- For $x_2 = 2$: $w(2) + b = -1$
 
-### Step 1: Evaluate Line Equation for Support Vector
+### Step 3: Solve Linear System
+Subtracting equations:
+$$w(4 - 2) = 1 - (-1) \implies 2w = 2 \implies w = 1.0$$
 
-For point `P1 (2, 2)`:
-```
-w^T * x + b = (-1)*(2) + (1)*(2) - 1 = -1
-y_1 * (w^T * x + b) = (+1) * (-1) = -1  (on margin boundary)
-```
+Substitute $w = 1.0$:
+$$1(2) + b = -1 \implies b = -3.0$$
 
-For point `P4 (3, 5)`:
-```
-w^T * x + b = (-1)*(3) + (1)*(5) - 1 = +1
-y_4 * (w^T * x + b) = (-1) * (+1) = -1  (on margin boundary)
-```
-
-### Step 2: Compute Margin Width
-
-```
-Margin = 2 / ||w||
-||w||  = sqrt((-1)^2 + (1)^2) = sqrt(2)
-Margin = 2 / sqrt(2) = sqrt(2) approx 1.414
-```
-
-### Step 3: Classify Unseen Query Point Q(4, 2)
-
-```
-w^T * Q + b = (-1)*(4) + (1)*(2) - 1 = -3
-Sign(w^T * Q + b) = Sign(-3) = -1
-Prediction = Class -1
-```
+Decision Boundary: $1.0 x - 3.0 = 0 \implies x = 3.0$.
+Margin Width = $\frac{2}{\|w\|} = \frac{2}{1} = 2.0$.
 
 ---
 
@@ -158,64 +120,65 @@ Prediction = Class -1
 +-----------------------------------------------------+
 |               START: main.py runs                   |
 +-----------------------------------------------------+
-                         |
-                         v
+                           |
+                           v
 +-----------------------------------------------------+
 |  Step 1: Load PipelineConfig                        |
-|  - PathConfig (dataset path, output path)           |
-|  - DataConfig (target='diagnosis', drop=['id'])      |
-|  - ModelConfig (kernel='rbf', C=1.0, gamma='scale') |
-|  - LoggingConfig (level=DEBUG, log to file=True)    |
+|  - PathConfig   (dataset and output paths)          |
+|  - DataConfig   (target_column='target', test_size) |
+|  - ModelConfig  (kernel='rbf', C=1.0, gamma='scale')|
+|  - LoggingConfig (console-only logs)                |
 +-----------------------------------------------------+
-                         |
-                         v
+                           |
+                           v
 +-----------------------------------------------------+
-|  Step 2: Initialize Logger (LoggerFactory)          |
-|  - Console handler (INFO level output)              |
-|  - File handler (svm_classification.log)            |
+|  Step 2: Initialize Console Logger                  |
 +-----------------------------------------------------+
-                         |
-                         v
+                           |
+                           v
 +-----------------------------------------------------+
 |  Step 3: DataLoaderService.load_and_prepare()       |
-|  - Load CSV -> Validate Schema                      |
-|  - Log exploratory data summary                     |
-|  - Impute missing values                            |
-|  - Encode target & categorical columns              |
-|  - Standardize features via StandardScaler          |
-|  - Stratified Train/Test split (80/20)              |
+|  - Load heart.csv, scale features with StandardScaler|
 +-----------------------------------------------------+
-                         |
-                         v
+                           |
+                           v
 +-----------------------------------------------------+
-|  Step 4: SVMClassifierService.train()               |
-|  - Build SVC estimator (cuML GPU / sklearn CPU)     |
-|  - Fit model on X_train, y_train                    |
+|  Step 4: SVMClassifierService                       |
+|  - Fit SVC model                                    |
+|  - Evaluate Accuracy, Precision, Recall, F1, ROC-AUC|
+|  - Plot confusion matrix & decision boundary        |
+|  - Export svm_analysis.md report                    |
 +-----------------------------------------------------+
-                         |
-                         v
-+-----------------------------------------------------+
-|  Step 5: SVMClassifierService.evaluate()            |
-|  - Predict X_test labels                            |
-|  - Compute Accuracy, Precision, Recall, F1-Score    |
-|  - Write classification_results.txt                 |
-|  - Save confusion_matrix.png & report bar chart     |
-|  - Save technical markdown explanation report       |
-+-----------------------------------------------------+
-                         |
-                         v
+                           |
+                           v
 +-----------------------------------------------------+
 |               END: Pipeline Complete               |
 +-----------------------------------------------------+
 ```
 
-### Module Responsibility Map
+---
+
+## 7. Module Responsibility Map
 
 ```
 main.py
   |
-  +-- config.py          (PipelineConfig, PathConfig, DataConfig, ModelConfig, LoggingConfig)
-  +-- logger.py          (LoggerFactory)
-  +-- data_loader.py     (DataLoaderService - load, validate, preprocess, scale, split)
-  +-- svm_classifier.py  (SVMClassifierService - build, train, evaluate, plot, report)
+  +-- config.py         (PipelineConfig, PathConfig, DataConfig, ModelConfig)
+  +-- logger.py         (LoggerFactory - stdout stream logging)
+  +-- data_loader.py    (DataLoaderService - loading, scaling, splitting)
+  +-- svm_classifier.py (SVMClassifierService - fit, decision boundary, metrics)
 ```
+
+---
+
+## 8. Configuration
+
+All parameters are configured in `src/config.py`.
+
+| Parameter     | Location      | Default    | Description                                      |
+|---------------|---------------|------------|--------------------------------------------------|
+| `C`           | `ModelConfig` | `1.0`      | Regularization parameter ($C > 0$)               |
+| `kernel`      | `ModelConfig` | `'rbf'`    | Kernel type (`'linear'`, `'rbf'`, `'poly'`)      |
+| `gamma`       | `ModelConfig` | `'scale'`  | Kernel coefficient for RBF/Poly                  |
+| `test_size`   | `DataConfig`  | `0.20`     | Partition percentage reserved for test evaluation|
+| `target_column`| `DataConfig` | `'target'` | Target classification outcome variable           |
